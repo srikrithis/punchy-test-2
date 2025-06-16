@@ -4,8 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
-  withSpring, 
   withTiming,
+  Easing,
   runOnJS
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -75,8 +75,8 @@ const mockCards = [
 
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = 360;
-const STACK_OFFSET = 25;
-const ANIMATION_DURATION = 400;
+const STACK_OFFSET = 35; // Increased from 25px to 35px
+const ANIMATION_DURATION = 350; // Slightly faster for smoother feel
 
 interface AnimatedCardProps {
   card: typeof mockCards[0];
@@ -97,25 +97,25 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
   
   React.useEffect(() => {
     if (isExpanded) {
-      // Animate to center and bring to front
-      translateY.value = withSpring(-stackPosition - 50, {
-        damping: 20,
-        stiffness: 300,
+      // Animate to center with smooth, less bouncy animation
+      translateY.value = withTiming(-stackPosition - 40, {
+        duration: ANIMATION_DURATION,
+        easing: Easing.out(Easing.cubic), // Smooth, soft easing
       });
-      scale.value = withSpring(1.05, {
-        damping: 20,
-        stiffness: 300,
+      scale.value = withTiming(1.03, {
+        duration: ANIMATION_DURATION,
+        easing: Easing.out(Easing.cubic),
       });
       zIndex.value = withTiming(1000, { duration: 50 });
     } else {
-      // Return to stack position
-      translateY.value = withSpring(0, {
-        damping: 20,
-        stiffness: 300,
+      // Return to stack position with smooth animation
+      translateY.value = withTiming(0, {
+        duration: ANIMATION_DURATION,
+        easing: Easing.out(Easing.cubic),
       });
-      scale.value = withSpring(1, {
-        damping: 20,
-        stiffness: 300,
+      scale.value = withTiming(1, {
+        duration: ANIMATION_DURATION,
+        easing: Easing.out(Easing.cubic),
       });
       zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
@@ -260,7 +260,8 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start', // Changed from flex-end to flex-start
+    paddingTop: 20, // Added top padding to move stack up
     paddingBottom: 120, // Space for tab bar
   },
   cardContainer: {
