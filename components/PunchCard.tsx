@@ -50,8 +50,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 0,
     padding: 24,
-    width: 360,
-    height: 226,
+    width: '100%',
+    height: '100%',
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: {

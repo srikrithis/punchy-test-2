@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
@@ -6,12 +6,11 @@ import Animated, {
   useAnimatedStyle, 
   withSpring, 
   withTiming,
-  runOnJS
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import PunchCard from '@/components/PunchCard';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 const mockCards = [
   {
@@ -123,14 +122,27 @@ const mockCards = [
 ];
 
 const CARD_HEIGHT = 226;
-const CARD_WIDTH = 360;
+const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 
-// Helper function to generate random offset between 32-36px
+// Helper function to generate small random vertical offset between 4-8px
 const getRandomOffset = (index: number) => {
-  // Use index as seed for consistent random values
   const seed = index * 1234567;
   const random = (seed % 5) / 4; // Normalize to 0-1
-  return 32 + (random * 4); // 32-36px range
+  return 4 + (random * 4); // 4-8px range
+};
+
+// Helper function to generate rotation between -2 to 2 degrees
+const getRandomRotation = (index: number) => {
+  const seed = index * 987654321;
+  const random = ((seed % 100) / 100) * 2 - 1; // -1 to 1
+  return random * 2; // -2 to 2 degrees
+};
+
+// Helper function to generate horizontal offset between -8 to 8px
+const getRandomHorizontalOffset = (index: number) => {
+  const seed = index * 456789123;
+  const random = ((seed % 100) / 100) * 2 - 1; // -1 to 1
+  return random * 8; // -8 to 8px
 };
 
 interface AnimatedCardProps {
@@ -147,13 +159,17 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
   const scale = useSharedValue(1);
   const zIndex = useSharedValue(totalCards - index);
   
-  // Calculate cumulative offset for this card's position in stack
-  const stackPosition = React.useMemo(() => {
+  // Calculate static values for this card's position and rotation
+  const { stackPosition, rotation, horizontalOffset } = useMemo(() => {
     let cumulativeOffset = 0;
     for (let i = 0; i < index; i++) {
       cumulativeOffset += getRandomOffset(i);
     }
-    return cumulativeOffset;
+    return {
+      stackPosition: cumulativeOffset,
+      rotation: getRandomRotation(index),
+      horizontalOffset: getRandomHorizontalOffset(index),
+    };
   }, [index]);
   
   React.useEffect(() => {
@@ -180,11 +196,13 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
       });
       zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
-  }, [isExpanded, stackPosition, totalCards, index]);
+  }, [isExpanded, totalCards, index]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
+      { translateX: horizontalOffset },
       { translateY: translateY.value },
+      { rotate: `${rotation}deg` },
       { scale: scale.value },
     ],
     zIndex: zIndex.value,
@@ -243,7 +261,7 @@ export default function WalletScreen() {
   };
 
   // Calculate total height needed for all cards
-  const totalStackHeight = React.useMemo(() => {
+  const totalStackHeight = useMemo(() => {
     let totalHeight = CARD_HEIGHT;
     for (let i = 0; i < mockCards.length; i++) {
       totalHeight += getRandomOffset(i);
@@ -341,7 +359,8 @@ const styles = StyleSheet.create({
   stackContainer: {
     position: 'relative',
     alignItems: 'center',
-    paddingTop: 0, // Changed from 20 to 0 to align to top
+    paddingTop: 0,
+    marginHorizontal: 16, // 16px margin on both sides
   },
   cardContainer: {
     position: 'absolute',
