@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Wallet, ScanLine, Compass, Palette } from 'lucide-react-native';
+import { Wallet, ScanLine, Compass } from 'lucide-react-native';
 import { StyleSheet, View, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
 
@@ -81,29 +81,6 @@ export default function TabLayout() {
                   { color: focused ? '#ffffff' : '#000000' }
                 ]}>
                   Discover
-                </Text>
-              </View>
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="design-system"
-        options={{
-          title: 'Design',
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tabContainer}>
-              <View style={[styles.navItem, focused && styles.navItemActive]}>
-                <Palette 
-                  color={focused ? '#ffffff' : '#000000'} 
-                  size={24} 
-                  strokeWidth={2} 
-                />
-                <Text style={[
-                  styles.navItemText, 
-                  { color: focused ? '#ffffff' : '#000000' }
-                ]}>
-                  Design
                 </Text>
               </View>
             </View>
