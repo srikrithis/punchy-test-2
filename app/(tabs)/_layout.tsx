@@ -23,18 +23,20 @@ export default function TabLayout() {
         options={{
           title: 'Wallet',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.navItem, focused && styles.navItemActive]}>
-              <Wallet 
-                color={focused ? '#ffffff' : '#000000'} 
-                size={24} 
-                strokeWidth={2} 
-              />
-              <Text style={[
-                styles.navItemText, 
-                { color: focused ? '#ffffff' : '#000000' }
-              ]}>
-                Wallet
-              </Text>
+            <View style={styles.tabContainer}>
+              <View style={[styles.navItem, focused && styles.navItemActive]}>
+                <Wallet 
+                  color={focused ? '#ffffff' : '#000000'} 
+                  size={24} 
+                  strokeWidth={2} 
+                />
+                <Text style={[
+                  styles.navItemText, 
+                  { color: focused ? '#ffffff' : '#000000' }
+                ]}>
+                  Wallet
+                </Text>
+              </View>
             </View>
           ),
         }}
@@ -44,18 +46,20 @@ export default function TabLayout() {
         options={{
           title: 'Scan',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.navItem, focused && styles.navItemActive]}>
-              <ScanLine 
-                color={focused ? '#ffffff' : '#000000'} 
-                size={24} 
-                strokeWidth={2} 
-              />
-              <Text style={[
-                styles.navItemText, 
-                { color: focused ? '#ffffff' : '#000000' }
-              ]}>
-                Scan
-              </Text>
+            <View style={styles.tabContainer}>
+              <View style={[styles.navItem, focused && styles.navItemActive]}>
+                <ScanLine 
+                  color={focused ? '#ffffff' : '#000000'} 
+                  size={24} 
+                  strokeWidth={2} 
+                />
+                <Text style={[
+                  styles.navItemText, 
+                  { color: focused ? '#ffffff' : '#000000' }
+                ]}>
+                  Scan
+                </Text>
+              </View>
             </View>
           ),
         }}
@@ -65,18 +69,20 @@ export default function TabLayout() {
         options={{
           title: 'Discover',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.navItem, focused && styles.navItemActive]}>
-              <Compass 
-                color={focused ? '#ffffff' : '#000000'} 
-                size={24} 
-                strokeWidth={2} 
-              />
-              <Text style={[
-                styles.navItemText, 
-                { color: focused ? '#ffffff' : '#000000' }
-              ]}>
-                Discover
-              </Text>
+            <View style={styles.tabContainer}>
+              <View style={[styles.navItem, focused && styles.navItemActive]}>
+                <Compass 
+                  color={focused ? '#ffffff' : '#000000'} 
+                  size={24} 
+                  strokeWidth={2} 
+                />
+                <Text style={[
+                  styles.navItemText, 
+                  { color: focused ? '#ffffff' : '#000000' }
+                ]}>
+                  Discover
+                </Text>
+              </View>
             </View>
           ),
         }}
@@ -127,6 +133,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 60,
   },
+  tabContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+  },
   navItem: {
     flexDirection: 'column',
     alignItems: 'center',
@@ -139,12 +151,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   navItemActive: {
-    backgroundColor: '#000000',
+    backgroundColor: '#1a1a1a', // Dark grey instead of pure black
   },
   navItemText: {
     fontFamily: 'DMSans-Medium',
     fontSize: 11,
     marginTop: 4,
     textAlign: 'center',
+    textAlignVertical: 'center',
   },
 });
