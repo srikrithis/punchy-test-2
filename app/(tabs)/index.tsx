@@ -99,11 +99,31 @@ const mockCards = [
     maxPunches: 10,
     backgroundColor: ['#DC143C', '#B22222'],
   },
+  {
+    id: '13',
+    businessName: 'Pressed Juicery',
+    punches: 5,
+    maxPunches: 8,
+    backgroundColor: ['#6AB04C', '#4CAF50'],
+  },
+  {
+    id: '14',
+    businessName: 'The Halal Guys',
+    punches: 3,
+    maxPunches: 7,
+    backgroundColor: ['#F39C12', '#E67E22'],
+  },
+  {
+    id: '15',
+    businessName: 'Chipotle',
+    punches: 8,
+    maxPunches: 12,
+    backgroundColor: ['#8B4513', '#A0522D'],
+  },
 ];
 
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = 360;
-const ANIMATION_DURATION = 400;
 
 // Helper function to generate random offset between 32-36px
 const getRandomOffset = (index: number) => {
@@ -321,7 +341,7 @@ const styles = StyleSheet.create({
   stackContainer: {
     position: 'relative',
     alignItems: 'center',
-    paddingTop: 20,
+    paddingTop: 0, // Changed from 20 to 0 to align to top
   },
   cardContainer: {
     position: 'absolute',
