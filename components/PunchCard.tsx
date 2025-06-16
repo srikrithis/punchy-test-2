@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 0,
     padding: 24,
     minHeight: 160,
     position: 'relative',
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.15,
-    borderRadius: 20,
+    borderRadius: 0,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
