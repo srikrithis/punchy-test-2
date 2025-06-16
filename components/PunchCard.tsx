@@ -26,7 +26,7 @@ export default function PunchCard({
   const isNearCompletion = punches >= maxPunches - 2;
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.95}>
+    <View style={styles.container}>
       <LinearGradient colors={backgroundColor} style={styles.card}>
         {pattern && (
           <View style={styles.patternContainer}>
@@ -87,17 +87,16 @@ export default function PunchCard({
           </View>
         </View>
       </LinearGradient>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginVertical: 10,
+    flex: 1,
   },
   card: {
-    borderRadius: 0,
+    borderRadius: 20,
     padding: 24,
     width: 360,
     height: 226,
@@ -118,7 +117,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.15,
-    borderRadius: 0,
+    borderRadius: 20,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
