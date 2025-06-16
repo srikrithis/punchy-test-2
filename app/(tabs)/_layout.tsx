@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Wallet, ScanLine, Compass } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 export default function TabLayout() {
@@ -9,11 +9,9 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#2D1B69',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarShowLabel: true,
-        tabBarItemStyle: styles.tabBarItem,
+        tabBarActiveTintColor: '#ffffff',
+        tabBarInactiveTintColor: '#ffffff',
+        tabBarShowLabel: false, // We'll handle labels manually
         tabBarBackground: () => (
           <BlurView intensity={20} style={styles.blurContainer}>
             <View style={styles.backgroundContainer} />
@@ -24,8 +22,20 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Wallet',
-          tabBarIcon: ({ color, size }) => (
-            <Wallet color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.navItem, focused && styles.navItemActive]}>
+              <Wallet 
+                color={focused ? '#ffffff' : '#000000'} 
+                size={24} 
+                strokeWidth={2} 
+              />
+              <Text style={[
+                styles.navItemText, 
+                { color: focused ? '#ffffff' : '#000000' }
+              ]}>
+                Wallet
+              </Text>
+            </View>
           ),
         }}
       />
@@ -33,8 +43,20 @@ export default function TabLayout() {
         name="scan"
         options={{
           title: 'Scan',
-          tabBarIcon: ({ color, size }) => (
-            <ScanLine color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.navItem, focused && styles.navItemActive]}>
+              <ScanLine 
+                color={focused ? '#ffffff' : '#000000'} 
+                size={24} 
+                strokeWidth={2} 
+              />
+              <Text style={[
+                styles.navItemText, 
+                { color: focused ? '#ffffff' : '#000000' }
+              ]}>
+                Scan
+              </Text>
+            </View>
           ),
         }}
       />
@@ -42,8 +64,20 @@ export default function TabLayout() {
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color, size }) => (
-            <Compass color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.navItem, focused && styles.navItemActive]}>
+              <Compass 
+                color={focused ? '#ffffff' : '#000000'} 
+                size={24} 
+                strokeWidth={2} 
+              />
+              <Text style={[
+                styles.navItemText, 
+                { color: focused ? '#ffffff' : '#000000' }
+              ]}>
+                Discover
+              </Text>
+            </View>
           ),
         }}
       />
@@ -79,13 +113,6 @@ const styles = StyleSheet.create({
     elevation: 8,
     overflow: 'hidden',
   },
-  tabBarItem: {
-    paddingTop: 8,
-    paddingBottom: 8,
-    height: 72,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   blurContainer: {
     position: 'absolute',
     top: 0,
@@ -100,10 +127,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 60,
   },
-  tabBarLabel: {
+  navItem: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 107,
+    height: 60,
+    borderRadius: 30,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: 'transparent',
+  },
+  navItemActive: {
+    backgroundColor: '#000000',
+  },
+  navItemText: {
     fontFamily: 'DMSans-Medium',
-    fontSize: 12,
-    marginTop: 2,
-    marginBottom: 0,
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
