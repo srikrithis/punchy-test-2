@@ -125,12 +125,12 @@ const mockCards = [
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = 360;
 
-// Helper function to generate random offset between 42-48px (increased from 32-36px)
+// Helper function to generate random offset between 32-36px
 const getRandomOffset = (index: number) => {
   // Use index as seed for consistent random values
   const seed = index * 1234567;
-  const random = (seed % 7) / 6; // Normalize to 0-1
-  return 42 + (random * 6); // 42-48px range (increased by 10-12px)
+  const random = (seed % 5) / 4; // Normalize to 0-1
+  return 32 + (random * 4); // 32-36px range
 };
 
 interface AnimatedCardProps {
