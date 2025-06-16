@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
@@ -71,12 +71,47 @@ const mockCards = [
     maxPunches: 9,
     backgroundColor: ['#FF8C00', '#FF7518'],
   },
+  {
+    id: '9',
+    businessName: 'Starbucks',
+    punches: 9,
+    maxPunches: 12,
+    backgroundColor: ['#00704A', '#228B22'],
+  },
+  {
+    id: '10',
+    businessName: 'Peet\'s Coffee',
+    punches: 4,
+    maxPunches: 7,
+    backgroundColor: ['#8B4513', '#A0522D'],
+  },
+  {
+    id: '11',
+    businessName: 'Blue Bottle Coffee',
+    punches: 2,
+    maxPunches: 8,
+    backgroundColor: ['#4169E1', '#1E90FF'],
+  },
+  {
+    id: '12',
+    businessName: 'Philz Coffee',
+    punches: 7,
+    maxPunches: 10,
+    backgroundColor: ['#DC143C', '#B22222'],
+  },
 ];
 
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = 360;
-const STACK_OFFSET = 25;
 const ANIMATION_DURATION = 400;
+
+// Helper function to generate random offset between 32-36px
+const getRandomOffset = (index: number) => {
+  // Use index as seed for consistent random values
+  const seed = index * 1234567;
+  const random = (seed % 5) / 4; // Normalize to 0-1
+  return 32 + (random * 4); // 32-36px range
+};
 
 interface AnimatedCardProps {
   card: typeof mockCards[0];
@@ -92,30 +127,36 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
   const scale = useSharedValue(1);
   const zIndex = useSharedValue(totalCards - index);
   
-  // Calculate initial position in stack (from bottom)
-  const stackPosition = (totalCards - 1 - index) * STACK_OFFSET;
+  // Calculate cumulative offset for this card's position in stack
+  const stackPosition = React.useMemo(() => {
+    let cumulativeOffset = 0;
+    for (let i = 0; i < index; i++) {
+      cumulativeOffset += getRandomOffset(i);
+    }
+    return cumulativeOffset;
+  }, [index]);
   
   React.useEffect(() => {
     if (isExpanded) {
-      // Animate to center and bring to front
-      translateY.value = withSpring(-stackPosition - 50, {
-        damping: 20,
-        stiffness: 300,
+      // Animate to center and bring to front with smoother spring
+      translateY.value = withSpring(100, {
+        damping: 30,
+        stiffness: 90,
       });
       scale.value = withSpring(1.05, {
-        damping: 20,
-        stiffness: 300,
+        damping: 30,
+        stiffness: 90,
       });
       zIndex.value = withTiming(1000, { duration: 50 });
     } else {
-      // Return to stack position
+      // Return to stack position with smoother spring
       translateY.value = withSpring(0, {
-        damping: 20,
-        stiffness: 300,
+        damping: 30,
+        stiffness: 90,
       });
       scale.value = withSpring(1, {
-        damping: 20,
-        stiffness: 300,
+        damping: 30,
+        stiffness: 90,
       });
       zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
@@ -142,7 +183,7 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
       style={[
         styles.cardContainer,
         {
-          bottom: stackPosition,
+          top: stackPosition,
         },
         animatedStyle,
       ]}
@@ -181,6 +222,15 @@ export default function WalletScreen() {
     }
   };
 
+  // Calculate total height needed for all cards
+  const totalStackHeight = React.useMemo(() => {
+    let totalHeight = CARD_HEIGHT;
+    for (let i = 0; i < mockCards.length; i++) {
+      totalHeight += getRandomOffset(i);
+    }
+    return totalHeight + 200; // Extra padding
+  }, []);
+
   return (
     <LinearGradient colors={['#f1eee6', '#faefea']} locations={[0.7, 1]} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -197,21 +247,27 @@ export default function WalletScreen() {
           </View>
         </View>
         
-        <TouchableWithoutFeedback onPress={handleOutsidePress}>
-          <View style={styles.stackContainer}>
-            {mockCards.map((card, index) => (
-              <AnimatedCard
-                key={card.id}
-                card={card}
-                index={index}
-                totalCards={mockCards.length}
-                isExpanded={expandedCardId === card.id}
-                onPress={() => handleCardPress(card.id)}
-                onSecondPress={() => handleCardSecondPress(card.id)}
-              />
-            ))}
-          </View>
-        </TouchableWithoutFeedback>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <TouchableWithoutFeedback onPress={handleOutsidePress}>
+            <View style={[styles.stackContainer, { height: totalStackHeight }]}>
+              {mockCards.map((card, index) => (
+                <AnimatedCard
+                  key={card.id}
+                  card={card}
+                  index={index}
+                  totalCards={mockCards.length}
+                  isExpanded={expandedCardId === card.id}
+                  onPress={() => handleCardPress(card.id)}
+                  onSecondPress={() => handleCardSecondPress(card.id)}
+                />
+              ))}
+            </View>
+          </TouchableWithoutFeedback>
+        </ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -256,12 +312,16 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
-  stackContainer: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 120, // Space for tab bar
+  },
+  stackContainer: {
     position: 'relative',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 120, // Space for tab bar
+    paddingTop: 20,
   },
   cardContainer: {
     position: 'absolute',
