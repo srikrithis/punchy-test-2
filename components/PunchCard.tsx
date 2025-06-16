@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 0,
     padding: 24,
     width: 360,
     height: 226,
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     opacity: 0.15,
-    borderRadius: 20,
+    borderRadius: 0,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   businessNamePill: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 4,
     borderRadius: 25,
     alignSelf: 'flex-start',
     backdropFilter: 'blur(10px)',
