@@ -124,11 +124,11 @@ const mockCards = [
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 
-// Helper function to generate small random vertical offset between 4-8px
+// Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
   const seed = index * 1234567;
   const random = (seed % 5) / 4; // Normalize to 0-1
-  return 18 + (random * 2); // 18-20px range
+  return 60 + (random * 6); // 60-66px range
 };
 
 // Helper function to generate rotation between -2 to 2 degrees
