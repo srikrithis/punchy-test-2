@@ -128,7 +128,7 @@ const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const getRandomOffset = (index: number) => {
   const seed = index * 1234567;
   const random = (seed % 5) / 4; // Normalize to 0-1
-  return 4 + (random * 4); // 4-8px range
+  return 18 + (random * 2); // 18-20px range
 };
 
 // Helper function to generate rotation between -2 to 2 degrees
