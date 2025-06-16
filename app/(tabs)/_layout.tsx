@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { Wallet, ScanLine, Compass } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 
 export default function TabLayout() {
   return (
@@ -14,11 +15,9 @@ export default function TabLayout() {
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarShowLabel: true,
         tabBarBackground: () => (
-          <LinearGradient
-            colors={['#f1eee6', '#faefea']}
-            locations={[0.7, 1]}
-            style={StyleSheet.absoluteFillObject}
-          />
+          <BlurView intensity={20} style={styles.blurContainer}>
+            <View style={styles.backgroundContainer} />
+          </BlurView>
         ),
       }}>
       <Tabs.Screen
@@ -66,8 +65,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     elevation: 0,
     shadowOpacity: 0,
-    borderRadius: 16,
+    borderRadius: 60,
     backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#dddddd',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -76,6 +77,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+  },
+  blurContainer: {
+    flex: 1,
+    borderRadius: 60,
+    overflow: 'hidden',
+  },
+  backgroundContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 60,
   },
   tabBarLabel: {
     fontFamily: 'DMSans-Medium',
