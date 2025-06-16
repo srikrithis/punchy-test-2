@@ -99,7 +99,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 0,
     padding: 24,
-    minHeight: 160,
+    width: 360,
+    height: 226,
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: {
