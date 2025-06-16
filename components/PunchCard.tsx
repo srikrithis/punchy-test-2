@@ -93,7 +93,7 @@ export default function PunchCard({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 24,
+    marginHorizontal: 16,
     marginVertical: 10,
   },
   card: {
