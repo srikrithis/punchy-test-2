@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, Pressable, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
@@ -318,7 +318,7 @@ export default function WalletScreen() {
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
         >
-          <TouchableWithoutFeedback onPress={handleOutsidePress}>
+          <Pressable onPress={handleOutsidePress}>
             <View 
               ref={containerRef}
               style={[styles.stackContainer, { height: totalStackHeight }]}
@@ -335,7 +335,7 @@ export default function WalletScreen() {
                 />
               ))}
             </View>
-          </TouchableWithoutFeedback>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
