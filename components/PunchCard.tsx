@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   businessName: {
     fontSize: 20,
-    fontFamily: 'DelaGothicOne-Regular',
+    fontFamily: 'DMSans-Medium',
     color: '#FFFFFF',
     textAlign: 'left',
   },
