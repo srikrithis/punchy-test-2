@@ -134,10 +134,10 @@ const styles = StyleSheet.create({
     borderRadius: 60,
   },
   tabContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    height: '100%',
+    height: 72, // Explicitly match the tabBar height
+    width: '100%',
   },
   navItem: {
     flexDirection: 'column',
