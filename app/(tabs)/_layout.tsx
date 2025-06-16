@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Wallet, ScanLine, Compass } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 
 export default function TabLayout() {
@@ -14,6 +13,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: '#8E8E93',
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarShowLabel: true,
+        tabBarItemStyle: styles.tabBarItem,
         tabBarBackground: () => (
           <BlurView intensity={20} style={styles.blurContainer}>
             <View style={styles.backgroundContainer} />
@@ -55,14 +55,14 @@ const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
     bottom: 12,
-    left: 24,
-    right: 24,
+    left: '50%',
+    transform: [{ translateX: -169 }], // Half of 338px width
     width: 338,
     height: 72,
     borderTopWidth: 0,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
     elevation: 0,
     shadowOpacity: 0,
     borderRadius: 60,
@@ -77,9 +77,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    overflow: 'hidden',
+  },
+  tabBarItem: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    height: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   blurContainer: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderRadius: 60,
     overflow: 'hidden',
   },
@@ -91,7 +103,7 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontFamily: 'DMSans-Medium',
     fontSize: 12,
-    marginTop: 4,
+    marginTop: 2,
     marginBottom: 0,
   },
 });
