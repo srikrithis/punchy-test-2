@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Wallet, ScanLine, Compass } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { StyleSheet, View, Text } from 'react-native';
 
 export default function TabLayout() {
   return (
@@ -9,23 +8,22 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#2D1B69',
-        tabBarInactiveTintColor: '#8E8E93',
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarShowLabel: true,
+        tabBarActiveTintColor: '#fff',
+        tabBarInactiveTintColor: '#fff',
+        tabBarShowLabel: false, // We'll handle labels manually
         tabBarItemStyle: styles.tabBarItem,
-        tabBarBackground: () => (
-          <BlurView intensity={20} style={styles.blurContainer}>
-            <View style={styles.backgroundContainer} />
-          </BlurView>
-        ),
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Wallet',
-          tabBarIcon: ({ color, size }) => (
-            <Wallet color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.iconWrapper, focused ? styles.iconWrapperFocused : styles.iconWrapperInactive]}>
+              <Wallet color="#fff" size={20} strokeWidth={2} />
+              <Text style={[styles.tabBarLabel, focused && styles.tabBarLabelActive]}>
+                Wallet
+              </Text>
+            </View>
           ),
         }}
       />
@@ -33,8 +31,13 @@ export default function TabLayout() {
         name="scan"
         options={{
           title: 'Scan',
-          tabBarIcon: ({ color, size }) => (
-            <ScanLine color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.iconWrapper, focused ? styles.iconWrapperFocused : styles.iconWrapperInactive]}>
+              <ScanLine color="#fff" size={20} strokeWidth={2} />
+              <Text style={[styles.tabBarLabel, focused && styles.tabBarLabelActive]}>
+                Scan
+              </Text>
+            </View>
           ),
         }}
       />
@@ -42,8 +45,13 @@ export default function TabLayout() {
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color, size }) => (
-            <Compass color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.iconWrapper, focused ? styles.iconWrapperFocused : styles.iconWrapperInactive]}>
+              <Compass color="#fff" size={20} strokeWidth={2} />
+              <Text style={[styles.tabBarLabel, focused && styles.tabBarLabelActive]}>
+                Discover
+              </Text>
+            </View>
           ),
         }}
       />
@@ -62,13 +70,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     paddingTop: 0,
     paddingBottom: 0,
-    paddingHorizontal: 0,
+    paddingHorizontal: 8,
     elevation: 0,
     shadowOpacity: 0,
     borderRadius: 60,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#dddddd',
+    backgroundColor: '#000',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -85,25 +91,34 @@ const styles = StyleSheet.create({
     height: 72,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  blurContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 60,
-    overflow: 'hidden',
-  },
-  backgroundContainer: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    borderRadius: 60,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    minWidth: 60,
+    minHeight: 56,
+  },
+  iconWrapperFocused: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  iconWrapperInactive: {
+    backgroundColor: '#000',
+    borderWidth: 0,
   },
   tabBarLabel: {
     fontFamily: 'DMSans-Medium',
-    fontSize: 12,
-    marginTop: 2,
-    marginBottom: 0,
+    fontSize: 11,
+    color: '#fff',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  tabBarLabelActive: {
+    fontFamily: 'DMSans-Bold',
   },
 });
