@@ -149,6 +149,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     backgroundColor: 'transparent',
+    gap: 4, // Even spacing between icon and text
   },
   navItemActive: {
     backgroundColor: '#1a1a1a', // Dark grey instead of pure black
@@ -156,7 +157,6 @@ const styles = StyleSheet.create({
   navItemText: {
     fontFamily: 'DMSans-Medium',
     fontSize: 11,
-    marginTop: 4,
     textAlign: 'center',
     textAlignVertical: 'center',
   },
