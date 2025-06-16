@@ -1,11 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
-  withSpring, 
-  withTiming,
+  withSpring,
   runOnJS
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -124,27 +123,29 @@ const mockCards = [
 
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = 360;
+const TOP_THRESHOLD = 180; // Cards above this need to scroll down
+const BOTTOM_THRESHOLD = 51; // Cards below this need to scroll up
+const SCROLL_OFFSET = 20; // Extra padding when scrolling
 
-// Helper function to generate random offset between 42-48px (increased from 32-36px)
+// Helper function to generate random offset between 42-48px
 const getRandomOffset = (index: number) => {
   // Use index as seed for consistent random values
   const seed = index * 1234567;
   const random = (seed % 7) / 6; // Normalize to 0-1
-  return 42 + (random * 6); // 42-48px range (increased by 10-12px)
+  return 42 + (random * 6); // 42-48px range
 };
 
 interface AnimatedCardProps {
   card: typeof mockCards[0];
   index: number;
   totalCards: number;
-  isExpanded: boolean;
-  onPress: () => void;
-  onSecondPress: () => void;
+  selectedCardId: string | null;
+  onPress: (cardId: string, cardRef: React.RefObject<View>) => void;
+  onSecondPress: (cardId: string) => void;
 }
 
-function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPress }: AnimatedCardProps) {
-  const translateY = useSharedValue(0);
-  const scale = useSharedValue(1);
+function AnimatedCard({ card, index, totalCards, selectedCardId, onPress, onSecondPress }: AnimatedCardProps) {
+  const cardRef = useRef<View>(null);
   const zIndex = useSharedValue(totalCards - index);
   
   // Calculate cumulative offset for this card's position in stack
@@ -156,50 +157,37 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
     return cumulativeOffset;
   }, [index]);
   
+  const isSelected = selectedCardId === card.id;
+  
   React.useEffect(() => {
-    if (isExpanded) {
-      // Animate to center and bring to front with smoother spring
-      translateY.value = withSpring(100, {
+    if (isSelected) {
+      zIndex.value = withSpring(1000, {
         damping: 30,
         stiffness: 90,
       });
-      scale.value = withSpring(1.05, {
-        damping: 30,
-        stiffness: 90,
-      });
-      zIndex.value = withTiming(1000, { duration: 50 });
     } else {
-      // Return to stack position with smoother spring
-      translateY.value = withSpring(0, {
+      zIndex.value = withSpring(totalCards - index, {
         damping: 30,
         stiffness: 90,
       });
-      scale.value = withSpring(1, {
-        damping: 30,
-        stiffness: 90,
-      });
-      zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
-  }, [isExpanded, stackPosition, totalCards, index]);
+  }, [isSelected, totalCards, index]);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
     zIndex: zIndex.value,
   }));
 
   const handlePress = () => {
-    if (isExpanded) {
-      onSecondPress();
+    if (isSelected) {
+      onSecondPress(card.id);
     } else {
-      onPress();
+      onPress(card.id, cardRef);
     }
   };
 
   return (
     <Animated.View 
+      ref={cardRef}
       style={[
         styles.cardContainer,
         {
@@ -225,22 +213,78 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
 }
 
 export default function WalletScreen() {
-  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const containerRef = useRef<View>(null);
 
-  const handleCardPress = (cardId: string) => {
-    setExpandedCardId(cardId);
-  };
+  const measureCardPosition = useCallback((cardRef: React.RefObject<View>) => {
+    return new Promise<{ top: number; bottom: number }>((resolve) => {
+      if (cardRef.current && containerRef.current) {
+        cardRef.current.measureLayout(
+          containerRef.current,
+          (x, y, width, height) => {
+            resolve({
+              top: y,
+              bottom: y + height,
+            });
+          },
+          () => {
+            // Fallback if measure fails
+            resolve({ top: 0, bottom: CARD_HEIGHT });
+          }
+        );
+      } else {
+        resolve({ top: 0, bottom: CARD_HEIGHT });
+      }
+    });
+  }, []);
 
-  const handleCardSecondPress = (cardId: string) => {
+  const scrollToCard = useCallback(async (cardPosition: { top: number; bottom: number }) => {
+    if (!scrollViewRef.current) return;
+
+    const { top, bottom } = cardPosition;
+    const availableHeight = screenHeight - 200; // Account for header and tab bar
+    
+    let scrollToY = 0;
+    let shouldScroll = false;
+
+    // Check if card's top is above threshold
+    if (top < TOP_THRESHOLD) {
+      scrollToY = Math.max(0, top - SCROLL_OFFSET);
+      shouldScroll = true;
+    }
+    // Check if card's bottom is below threshold
+    else if (bottom > availableHeight - BOTTOM_THRESHOLD) {
+      scrollToY = bottom - (availableHeight - BOTTOM_THRESHOLD) + SCROLL_OFFSET;
+      shouldScroll = true;
+    }
+
+    if (shouldScroll) {
+      scrollViewRef.current.scrollTo({
+        y: scrollToY,
+        animated: true,
+      });
+    }
+  }, []);
+
+  const handleCardPress = useCallback(async (cardId: string, cardRef: React.RefObject<View>) => {
+    setSelectedCardId(cardId);
+    
+    // Measure card position and scroll if needed
+    const cardPosition = await measureCardPosition(cardRef);
+    await scrollToCard(cardPosition);
+  }, [measureCardPosition, scrollToCard]);
+
+  const handleCardSecondPress = useCallback((cardId: string) => {
     // Navigate to punch card detail
     router.push(`/punch-card/${cardId}`);
-  };
+  }, []);
 
-  const handleOutsidePress = () => {
-    if (expandedCardId) {
-      setExpandedCardId(null);
+  const handleOutsidePress = useCallback(() => {
+    if (selectedCardId) {
+      setSelectedCardId(null);
     }
-  };
+  }, [selectedCardId]);
 
   // Calculate total height needed for all cards
   const totalStackHeight = React.useMemo(() => {
@@ -268,21 +312,26 @@ export default function WalletScreen() {
         </View>
         
         <ScrollView 
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
         >
           <TouchableWithoutFeedback onPress={handleOutsidePress}>
-            <View style={[styles.stackContainer, { height: totalStackHeight }]}>
+            <View 
+              ref={containerRef}
+              style={[styles.stackContainer, { height: totalStackHeight }]}
+            >
               {mockCards.map((card, index) => (
                 <AnimatedCard
                   key={card.id}
                   card={card}
                   index={index}
                   totalCards={mockCards.length}
-                  isExpanded={expandedCardId === card.id}
-                  onPress={() => handleCardPress(card.id)}
-                  onSecondPress={() => handleCardSecondPress(card.id)}
+                  selectedCardId={selectedCardId}
+                  onPress={handleCardPress}
+                  onSecondPress={handleCardSecondPress}
                 />
               ))}
             </View>
@@ -341,7 +390,7 @@ const styles = StyleSheet.create({
   stackContainer: {
     position: 'relative',
     alignItems: 'center',
-    paddingTop: 0, // Changed from 20 to 0 to align to top
+    paddingTop: 0,
   },
   cardContainer: {
     position: 'absolute',
