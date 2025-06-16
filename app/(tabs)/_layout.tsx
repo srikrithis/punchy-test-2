@@ -12,6 +12,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: '#2D1B69',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarLabelStyle: styles.tabBarLabel,
+        tabBarShowLabel: true,
         tabBarBackground: () => (
           <LinearGradient
             colors={['#f1eee6', '#faefea']}
@@ -53,16 +54,33 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
+    position: 'absolute',
+    bottom: 12,
+    left: 24,
+    right: 24,
+    width: 338,
+    height: 72,
     borderTopWidth: 0,
-    paddingTop: 12,
-    paddingBottom: 34,
-    height: 88,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingHorizontal: 16,
     elevation: 0,
     shadowOpacity: 0,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   tabBarLabel: {
     fontFamily: 'DMSans-Medium',
-    fontSize: 11,
+    fontSize: 12,
     marginTop: 4,
+    marginBottom: 0,
   },
 });
