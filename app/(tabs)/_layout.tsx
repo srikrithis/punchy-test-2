@@ -9,8 +9,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#2D1B69',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: '#000000',
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarShowLabel: true,
         tabBarItemStyle: styles.tabBarItem,
@@ -24,8 +24,17 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Wallet',
-          tabBarIcon: ({ color, size }) => (
-            <Wallet color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.activeIconContainer]}>
+              <Wallet color={color} size={size} strokeWidth={2} />
+            </View>
+          ),
+          tabBarLabel: ({ focused, children }) => (
+            <View style={[styles.labelContainer, focused && styles.activeLabelContainer]}>
+              <View style={styles.labelText}>
+                {children}
+              </View>
+            </View>
           ),
         }}
       />
@@ -33,8 +42,17 @@ export default function TabLayout() {
         name="scan"
         options={{
           title: 'Scan',
-          tabBarIcon: ({ color, size }) => (
-            <ScanLine color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.activeIconContainer]}>
+              <ScanLine color={color} size={size} strokeWidth={2} />
+            </View>
+          ),
+          tabBarLabel: ({ focused, children }) => (
+            <View style={[styles.labelContainer, focused && styles.activeLabelContainer]}>
+              <View style={styles.labelText}>
+                {children}
+              </View>
+            </View>
           ),
         }}
       />
@@ -42,8 +60,17 @@ export default function TabLayout() {
         name="discover"
         options={{
           title: 'Discover',
-          tabBarIcon: ({ color, size }) => (
-            <Compass color={color} size={size} strokeWidth={2} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.activeIconContainer]}>
+              <Compass color={color} size={size} strokeWidth={2} />
+            </View>
+          ),
+          tabBarLabel: ({ focused, children }) => (
+            <View style={[styles.labelContainer, focused && styles.activeLabelContainer]}>
+              <View style={styles.labelText}>
+                {children}
+              </View>
+            </View>
           ),
         }}
       />
@@ -62,7 +89,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     paddingTop: 0,
     paddingBottom: 0,
-    paddingHorizontal: 0,
+    paddingHorizontal: 12,
     elevation: 0,
     shadowOpacity: 0,
     borderRadius: 60,
@@ -85,6 +112,7 @@ const styles = StyleSheet.create({
     height: 72,
     justifyContent: 'center',
     alignItems: 'center',
+    flex: 1,
   },
   blurContainer: {
     position: 'absolute',
@@ -105,5 +133,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     marginBottom: 0,
+  },
+  iconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    minWidth: 48,
+    minHeight: 32,
+  },
+  activeIconContainer: {
+    backgroundColor: '#000000',
+  },
+  labelContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginTop: 2,
+  },
+  activeLabelContainer: {
+    backgroundColor: '#000000',
+  },
+  labelText: {
+    fontFamily: 'DMSans-Medium',
+    fontSize: 12,
+    color: 'inherit',
   },
 });
