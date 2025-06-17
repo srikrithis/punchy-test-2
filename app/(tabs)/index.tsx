@@ -125,13 +125,12 @@ const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const HEADER_HEIGHT = 120; // Approximate header height
 const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
-const SPACING_GAP = 14; // 14px gap above and below expanded card
 
-// Helper function to generate random vertical offset between 32-36px
+// Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
   const seed = index * 1234567;
   const random = (seed % 5) / 4; // Normalize to 0-1
-  return 32 + (random * 4); // 32-36px range
+  return 60 + (random * 6); // 60-66px range
 };
 
 // Helper function to generate rotation between -2 to 2 degrees
@@ -156,7 +155,6 @@ interface AnimatedCardProps {
   initialStackPosition: number;
   initialRotation: number;
   initialHorizontalOffset: number;
-  expandedCardTargetY: number;
   onPress: () => void;
   onSecondPress: () => void;
 }
@@ -169,7 +167,6 @@ function AnimatedCard({
   initialStackPosition,
   initialRotation,
   initialHorizontalOffset,
-  expandedCardTargetY,
   onPress, 
   onSecondPress 
 }: AnimatedCardProps) {
@@ -180,30 +177,19 @@ function AnimatedCard({
   const zIndex = useSharedValue(totalCards - index);
   
   const isExpanded = expandedCardIndex === index;
-  const isBeforeExpanded = expandedCardIndex !== null && index < expandedCardIndex;
   const isAfterExpanded = expandedCardIndex !== null && index > expandedCardIndex;
   
   useEffect(() => {
     if (isExpanded) {
-      // Expanded card: move to center position, straighten, bring to front
-      const targetYDelta = expandedCardTargetY - initialStackPosition;
-      translateYDelta.value = withSpring(targetYDelta, { damping: 30, stiffness: 90 });
+      // Expanded card: center horizontally, keep rotation, bring to front
+      translateYDelta.value = withSpring(0, { damping: 30, stiffness: 90 });
       translateX.value = withSpring(0, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1.05, { damping: 30, stiffness: 90 });
-      rotate.value = withSpring(0, { damping: 30, stiffness: 90 });
-      zIndex.value = withTiming(1000, { duration: 50 });
-    } else if (isBeforeExpanded && expandedCardIndex !== null) {
-      // Cards before expanded: move up by 14px to create gap
-      translateYDelta.value = withSpring(-SPACING_GAP, { damping: 30, stiffness: 90 });
-      translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
-      scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
-      zIndex.value = withTiming(totalCards - index, { duration: 50 });
+      zIndex.value = withTiming(1000, { duration: 50 });
     } else if (isAfterExpanded && expandedCardIndex !== null) {
-      // Cards after expanded: move down to create 14px gap below expanded card
-      const expandedCardBottom = expandedCardTargetY + CARD_HEIGHT;
-      const targetYDelta = expandedCardBottom + SPACING_GAP - initialStackPosition;
-      translateYDelta.value = withSpring(targetYDelta, { damping: 30, stiffness: 90 });
+      // Cards after expanded: push down by card height
+      translateYDelta.value = withSpring(CARD_HEIGHT, { damping: 30, stiffness: 90 });
       translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
@@ -216,7 +202,7 @@ function AnimatedCard({
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
       zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
-  }, [isExpanded, isBeforeExpanded, isAfterExpanded, expandedCardIndex, expandedCardTargetY, initialStackPosition, initialHorizontalOffset, initialRotation, totalCards, index]);
+  }, [isExpanded, isAfterExpanded, expandedCardIndex, initialHorizontalOffset, initialRotation, totalCards, index]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -286,17 +272,12 @@ export default function WalletScreen() {
     return mockCards.findIndex(card => card.id === expandedCardId);
   }, [expandedCardId]);
 
-  // Calculate the target Y position for the expanded card (centered in viewport)
-  const expandedCardTargetY = useMemo(() => {
-    const visibleHeight = screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT;
-    return (visibleHeight / 2) - (CARD_HEIGHT / 2);
-  }, []);
-
   // Handle scroll to center expanded card
   useEffect(() => {
     if (expandedCardIndex !== null && scrollViewRef.current) {
       const expandedCardPosition = cardPositions[expandedCardIndex].initialStackPosition;
-      const targetScrollY = Math.max(0, expandedCardPosition - expandedCardTargetY);
+      const visibleHeight = screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT;
+      const targetScrollY = Math.max(0, expandedCardPosition - (visibleHeight / 2) + (CARD_HEIGHT / 2));
       
       scrollViewRef.current.scrollTo({ 
         y: targetScrollY, 
@@ -309,7 +290,7 @@ export default function WalletScreen() {
         animated: true 
       });
     }
-  }, [expandedCardIndex, cardPositions, expandedCardTargetY]);
+  }, [expandedCardIndex, cardPositions]);
 
   const handleCardPress = (cardId: string) => {
     setExpandedCardId(cardId);
@@ -332,9 +313,9 @@ export default function WalletScreen() {
     for (let i = 0; i < mockCards.length; i++) {
       totalHeight += getRandomOffset(i);
     }
-    // Add extra space for card expansion and spacing
+    // Add extra space for card expansion
     if (expandedCardIndex !== null) {
-      totalHeight += CARD_HEIGHT + (SPACING_GAP * 2);
+      totalHeight += CARD_HEIGHT;
     }
     return totalHeight + 200; // Extra padding
   }, [expandedCardIndex]);
@@ -373,7 +354,6 @@ export default function WalletScreen() {
                   initialStackPosition={cardPositions[index].initialStackPosition}
                   initialRotation={cardPositions[index].initialRotation}
                   initialHorizontalOffset={cardPositions[index].initialHorizontalOffset}
-                  expandedCardTargetY={expandedCardTargetY}
                   onPress={() => handleCardPress(card.id)}
                   onSecondPress={() => handleCardSecondPress(card.id)}
                 />
