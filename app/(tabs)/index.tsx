@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
@@ -10,7 +10,7 @@ import Animated, {
 import { router } from 'expo-router';
 import PunchCard from '@/components/PunchCard';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const mockCards = [
   {
@@ -123,6 +123,8 @@ const mockCards = [
 
 const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
+const HEADER_HEIGHT = 120; // Approximate header height
+const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
 
 // Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
@@ -149,60 +151,64 @@ interface AnimatedCardProps {
   card: typeof mockCards[0];
   index: number;
   totalCards: number;
-  isExpanded: boolean;
+  expandedCardIndex: number | null;
+  initialStackPosition: number;
+  initialRotation: number;
+  initialHorizontalOffset: number;
   onPress: () => void;
   onSecondPress: () => void;
 }
 
-function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPress }: AnimatedCardProps) {
-  const translateY = useSharedValue(0);
+function AnimatedCard({ 
+  card, 
+  index, 
+  totalCards, 
+  expandedCardIndex, 
+  initialStackPosition,
+  initialRotation,
+  initialHorizontalOffset,
+  onPress, 
+  onSecondPress 
+}: AnimatedCardProps) {
+  const translateYDelta = useSharedValue(0);
+  const translateX = useSharedValue(initialHorizontalOffset);
   const scale = useSharedValue(1);
+  const rotate = useSharedValue(initialRotation);
   const zIndex = useSharedValue(totalCards - index);
   
-  // Calculate static values for this card's position and rotation
-  const { stackPosition, rotation, horizontalOffset } = useMemo(() => {
-    let cumulativeOffset = 0;
-    for (let i = 0; i < index; i++) {
-      cumulativeOffset += getRandomOffset(i);
-    }
-    return {
-      stackPosition: cumulativeOffset,
-      rotation: getRandomRotation(index),
-      horizontalOffset: getRandomHorizontalOffset(index),
-    };
-  }, [index]);
+  const isExpanded = expandedCardIndex === index;
+  const isAfterExpanded = expandedCardIndex !== null && index > expandedCardIndex;
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (isExpanded) {
-      // Animate to center and bring to front with smoother spring
-      translateY.value = withSpring(100, {
-        damping: 30,
-        stiffness: 90,
-      });
-      scale.value = withSpring(1.05, {
-        damping: 30,
-        stiffness: 90,
-      });
+      // Expanded card: center horizontally, keep rotation, bring to front
+      translateYDelta.value = withSpring(0, { damping: 30, stiffness: 90 });
+      translateX.value = withSpring(0, { damping: 30, stiffness: 90 });
+      scale.value = withSpring(1.05, { damping: 30, stiffness: 90 });
+      rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
       zIndex.value = withTiming(1000, { duration: 50 });
+    } else if (isAfterExpanded && expandedCardIndex !== null) {
+      // Cards after expanded: push down by card height
+      translateYDelta.value = withSpring(CARD_HEIGHT, { damping: 30, stiffness: 90 });
+      translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
+      scale.value = withSpring(1, { damping: 30, stiffness: 90 });
+      rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
+      zIndex.value = withTiming(totalCards - index, { duration: 50 });
     } else {
-      // Return to stack position with smoother spring
-      translateY.value = withSpring(0, {
-        damping: 30,
-        stiffness: 90,
-      });
-      scale.value = withSpring(1, {
-        damping: 30,
-        stiffness: 90,
-      });
+      // Normal stack position
+      translateYDelta.value = withSpring(0, { damping: 30, stiffness: 90 });
+      translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
+      scale.value = withSpring(1, { damping: 30, stiffness: 90 });
+      rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
       zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
-  }, [isExpanded, totalCards, index]);
+  }, [isExpanded, isAfterExpanded, expandedCardIndex, initialHorizontalOffset, initialRotation, totalCards, index]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: horizontalOffset },
-      { translateY: translateY.value },
-      { rotate: `${rotation}deg` },
+      { translateX: translateX.value },
+      { translateY: translateYDelta.value },
+      { rotate: `${rotate.value}deg` },
       { scale: scale.value },
     ],
     zIndex: zIndex.value,
@@ -221,7 +227,7 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
       style={[
         styles.cardContainer,
         {
-          top: stackPosition,
+          top: initialStackPosition,
         },
         animatedStyle,
       ]}
@@ -244,6 +250,47 @@ function AnimatedCard({ card, index, totalCards, isExpanded, onPress, onSecondPr
 
 export default function WalletScreen() {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Pre-calculate all card positions and properties
+  const cardPositions = useMemo(() => {
+    return mockCards.map((_, index) => {
+      let cumulativeOffset = 0;
+      for (let i = 0; i < index; i++) {
+        cumulativeOffset += getRandomOffset(i);
+      }
+      return {
+        initialStackPosition: cumulativeOffset,
+        initialRotation: getRandomRotation(index),
+        initialHorizontalOffset: getRandomHorizontalOffset(index),
+      };
+    });
+  }, []);
+
+  const expandedCardIndex = useMemo(() => {
+    if (!expandedCardId) return null;
+    return mockCards.findIndex(card => card.id === expandedCardId);
+  }, [expandedCardId]);
+
+  // Handle scroll to center expanded card
+  useEffect(() => {
+    if (expandedCardIndex !== null && scrollViewRef.current) {
+      const expandedCardPosition = cardPositions[expandedCardIndex].initialStackPosition;
+      const visibleHeight = screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT;
+      const targetScrollY = Math.max(0, expandedCardPosition - (visibleHeight / 2) + (CARD_HEIGHT / 2));
+      
+      scrollViewRef.current.scrollTo({ 
+        y: targetScrollY, 
+        animated: true 
+      });
+    } else if (expandedCardIndex === null && scrollViewRef.current) {
+      // Return to top when no card is expanded
+      scrollViewRef.current.scrollTo({ 
+        y: 0, 
+        animated: true 
+      });
+    }
+  }, [expandedCardIndex, cardPositions]);
 
   const handleCardPress = (cardId: string) => {
     setExpandedCardId(cardId);
@@ -260,14 +307,18 @@ export default function WalletScreen() {
     }
   };
 
-  // Calculate total height needed for all cards
+  // Calculate total height needed for all cards (including expansion space)
   const totalStackHeight = useMemo(() => {
     let totalHeight = CARD_HEIGHT;
     for (let i = 0; i < mockCards.length; i++) {
       totalHeight += getRandomOffset(i);
     }
+    // Add extra space for card expansion
+    if (expandedCardIndex !== null) {
+      totalHeight += CARD_HEIGHT;
+    }
     return totalHeight + 200; // Extra padding
-  }, []);
+  }, [expandedCardIndex]);
 
   return (
     <LinearGradient colors={['#f1eee6', '#faefea']} locations={[0.7, 1]} style={styles.container}>
@@ -286,6 +337,7 @@ export default function WalletScreen() {
         </View>
         
         <ScrollView 
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -298,7 +350,10 @@ export default function WalletScreen() {
                   card={card}
                   index={index}
                   totalCards={mockCards.length}
-                  isExpanded={expandedCardId === card.id}
+                  expandedCardIndex={expandedCardIndex}
+                  initialStackPosition={cardPositions[index].initialStackPosition}
+                  initialRotation={cardPositions[index].initialRotation}
+                  initialHorizontalOffset={cardPositions[index].initialHorizontalOffset}
                   onPress={() => handleCardPress(card.id)}
                   onSecondPress={() => handleCardSecondPress(card.id)}
                 />
