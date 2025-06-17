@@ -122,16 +122,16 @@ const mockCards = [
 ];
 
 const CARD_HEIGHT = 226;
-const CARD_WIDTH = 360;
-const HEADER_HEIGHT = 120;
-const TAB_BAR_HEIGHT = 100;
+const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
+const HEADER_HEIGHT = 120; // Approximate header height
+const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
 const SPACING_AROUND_EXPANDED = 14; // 14px space above and below expanded card
 
-// Helper function to generate random vertical offset between 32-36px
+// Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
   const seed = index * 1234567;
   const random = (seed % 5) / 4; // Normalize to 0-1
-  return 32 + (random * 4); // 32-36px range
+  return 60 + (random * 6); // 60-66px range
 };
 
 // Helper function to generate rotation between -2 to 2 degrees
@@ -156,6 +156,7 @@ interface AnimatedCardProps {
   initialStackPosition: number;
   initialRotation: number;
   initialHorizontalOffset: number;
+  expandedCardTargetY: number;
   onPress: () => void;
   onSecondPress: () => void;
 }
@@ -168,6 +169,7 @@ function AnimatedCard({
   initialStackPosition,
   initialRotation,
   initialHorizontalOffset,
+  expandedCardTargetY,
   onPress, 
   onSecondPress 
 }: AnimatedCardProps) {
@@ -178,24 +180,54 @@ function AnimatedCard({
   const zIndex = useSharedValue(totalCards - index);
   
   const isExpanded = expandedCardIndex === index;
+  const isBeforeExpanded = expandedCardIndex !== null && index < expandedCardIndex;
+  const isAfterExpanded = expandedCardIndex !== null && index > expandedCardIndex;
   
   useEffect(() => {
     if (isExpanded) {
-      // Expanded card: center and bring to front
-      translateYDelta.value = withSpring(100, { damping: 30, stiffness: 90 });
+      // Expanded card: move to target position, center horizontally, bring to front
+      const targetYDelta = expandedCardTargetY - initialStackPosition;
+      translateYDelta.value = withSpring(targetYDelta, { damping: 30, stiffness: 90 });
       translateX.value = withSpring(0, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1.05, { damping: 30, stiffness: 90 });
-      rotate.value = withSpring(0, { damping: 30, stiffness: 90 });
+      rotate.value = withSpring(0, { damping: 30, stiffness: 90 }); // Straighten the expanded card
       zIndex.value = withTiming(1000, { duration: 50 });
+    } else if (isBeforeExpanded && expandedCardIndex !== null) {
+      // Cards before expanded: shift up to create 14px space above expanded card
+      const expandedCardTop = expandedCardTargetY;
+      const lastCardBeforeExpandedBottom = expandedCardTop - SPACING_AROUND_EXPANDED;
+      
+      // Calculate how much this card needs to move up
+      const currentCardBottom = initialStackPosition + CARD_HEIGHT;
+      const targetYDelta = lastCardBeforeExpandedBottom - currentCardBottom;
+      
+      translateYDelta.value = withSpring(targetYDelta, { damping: 30, stiffness: 90 });
+      translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
+      scale.value = withSpring(1, { damping: 30, stiffness: 90 });
+      rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
+      zIndex.value = withTiming(totalCards - index, { duration: 50 });
+    } else if (isAfterExpanded && expandedCardIndex !== null) {
+      // Cards after expanded: shift down to create 14px space below expanded card
+      const expandedCardBottom = expandedCardTargetY + CARD_HEIGHT;
+      const firstCardAfterExpandedTop = expandedCardBottom + SPACING_AROUND_EXPANDED;
+      
+      // Calculate how much this card needs to move down
+      const targetYDelta = firstCardAfterExpandedTop - initialStackPosition;
+      
+      translateYDelta.value = withSpring(targetYDelta, { damping: 30, stiffness: 90 });
+      translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
+      scale.value = withSpring(1, { damping: 30, stiffness: 90 });
+      rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
+      zIndex.value = withTiming(totalCards - index, { duration: 50 });
     } else {
-      // Return to stack position with fanning
+      // Normal stack position
       translateYDelta.value = withSpring(0, { damping: 30, stiffness: 90 });
       translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
       zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
-  }, [isExpanded, initialStackPosition, initialHorizontalOffset, initialRotation, totalCards, index]);
+  }, [isExpanded, isBeforeExpanded, isAfterExpanded, expandedCardIndex, expandedCardTargetY, initialStackPosition, initialHorizontalOffset, initialRotation, totalCards, index]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -265,25 +297,29 @@ export default function WalletScreen() {
     return mockCards.findIndex(card => card.id === expandedCardId);
   }, [expandedCardId]);
 
-  // Handle scroll to center expanded card with 14px spacing
+  // Calculate the target Y position for the expanded card (centered in viewport)
+  const expandedCardTargetY = useMemo(() => {
+    const visibleHeight = screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT;
+    return (visibleHeight / 2) - (CARD_HEIGHT / 2);
+  }, []);
+
+  // Handle scroll to center expanded card
   useEffect(() => {
     if (expandedCardIndex !== null && scrollViewRef.current) {
-      const expandedCardInitialPos = cardPositions[expandedCardIndex].initialStackPosition;
-      const availableHeight = screenHeight - HEADER_HEIGHT - TAB_BAR_HEIGHT;
-      const targetScreenYForExpandedCardTop = HEADER_HEIGHT + (availableHeight / 2) - (CARD_HEIGHT / 2) + SPACING_AROUND_EXPANDED;
-      const targetScrollY = Math.max(0, HEADER_HEIGHT + expandedCardInitialPos - targetScreenYForExpandedCardTop);
+      const targetScrollY = Math.max(0, expandedCardTargetY);
       
       scrollViewRef.current.scrollTo({ 
         y: targetScrollY, 
         animated: true 
       });
     } else if (expandedCardIndex === null && scrollViewRef.current) {
+      // Return to top when no card is expanded
       scrollViewRef.current.scrollTo({ 
         y: 0, 
         animated: true 
       });
     }
-  }, [expandedCardIndex, cardPositions]);
+  }, [expandedCardIndex, expandedCardTargetY]);
 
   const handleCardPress = (cardId: string) => {
     setExpandedCardId(cardId);
@@ -300,14 +336,18 @@ export default function WalletScreen() {
     }
   };
 
-  // Calculate total height needed for all cards
+  // Calculate total height needed for all cards (including expansion space)
   const totalStackHeight = useMemo(() => {
     let totalHeight = CARD_HEIGHT;
     for (let i = 0; i < mockCards.length; i++) {
       totalHeight += getRandomOffset(i);
     }
-    return totalHeight + 300; // Extra padding
-  }, []);
+    // Add extra space for card expansion and spacing
+    if (expandedCardIndex !== null) {
+      totalHeight += (SPACING_AROUND_EXPANDED * 2) + CARD_HEIGHT;
+    }
+    return totalHeight + 300; // Extra padding for scrolling
+  }, [expandedCardIndex]);
 
   return (
     <LinearGradient colors={['#f1eee6', '#faefea']} locations={[0.7, 1]} style={styles.container}>
@@ -343,6 +383,7 @@ export default function WalletScreen() {
                   initialStackPosition={cardPositions[index].initialStackPosition}
                   initialRotation={cardPositions[index].initialRotation}
                   initialHorizontalOffset={cardPositions[index].initialHorizontalOffset}
+                  expandedCardTargetY={expandedCardTargetY}
                   onPress={() => handleCardPress(card.id)}
                   onSecondPress={() => handleCardSecondPress(card.id)}
                 />
@@ -404,6 +445,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     paddingTop: 0,
+    marginHorizontal: 16, // 16px margin on both sides
   },
   cardContainer: {
     position: 'absolute',
