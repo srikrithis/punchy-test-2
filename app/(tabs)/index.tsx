@@ -179,7 +179,7 @@ function AnimatedCard({
   const translateX = useSharedValue(initialHorizontalOffset);
   const scale = useSharedValue(1);
   const rotate = useSharedValue(initialRotation);
-  const zIndex = useSharedValue(totalCards - index);
+  const zIndex = useSharedValue(totalCards - index + 100); // Ensure cards are above search bar
   
   const isExpanded = expandedCardIndex === index;
   const isAfterExpanded = expandedCardIndex !== null && index > expandedCardIndex;
@@ -198,14 +198,14 @@ function AnimatedCard({
       translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
-      zIndex.value = withTiming(totalCards - index, { duration: 50 });
+      zIndex.value = withTiming(totalCards - index + 100, { duration: 50 });
     } else {
       // Normal stack position
       translateYDelta.value = withSpring(0, { damping: 30, stiffness: 90 });
       translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
-      zIndex.value = withTiming(totalCards - index, { duration: 50 });
+      zIndex.value = withTiming(totalCards - index + 100, { duration: 50 });
     }
   }, [isExpanded, isAfterExpanded, expandedCardIndex, initialHorizontalOffset, initialRotation, totalCards, index]);
 
@@ -388,7 +388,7 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* Floating Search Bar */}
+        {/* Floating Search Bar - Behind Cards */}
         <Animated.View style={[styles.floatingSearchContainer, searchBarAnimatedStyle]}>
           <View style={styles.searchBar}>
             <Search color="#6B7280" size={20} strokeWidth={2} />
@@ -495,24 +495,25 @@ const styles = StyleSheet.create({
     top: HEADER_HEIGHT + 40, // Position below header
     left: 0,
     right: 0,
-    zIndex: 1000,
+    zIndex: 50, // Lower z-index so cards appear above it
     paddingHorizontal: 24,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Slightly transparent
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOpacity: 0.08, // Reduced shadow for subtlety
+    shadowRadius: 8,
+    elevation: 4,
+    backdropFilter: 'blur(10px)', // Add blur effect
   },
   searchInput: {
     flex: 1,
