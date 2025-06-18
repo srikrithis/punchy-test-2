@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { Search, X } from 'lucide-react-native';
 import PunchCard from '@/components/PunchCard';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -250,11 +251,22 @@ function AnimatedCard({
 
 export default function WalletScreen() {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Pre-calculate all card positions and properties
+  // Filter cards based on search query
+  const filteredCards = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return mockCards;
+    }
+    return mockCards.filter(card =>
+      card.businessName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+
+  // Pre-calculate all card positions and properties for filtered cards
   const cardPositions = useMemo(() => {
-    return mockCards.map((_, index) => {
+    return filteredCards.map((_, index) => {
       let cumulativeOffset = 0;
       for (let i = 0; i < index; i++) {
         cumulativeOffset += getRandomOffset(i);
@@ -265,12 +277,12 @@ export default function WalletScreen() {
         initialHorizontalOffset: getRandomHorizontalOffset(index),
       };
     });
-  }, []);
+  }, [filteredCards]);
 
   const expandedCardIndex = useMemo(() => {
     if (!expandedCardId) return null;
-    return mockCards.findIndex(card => card.id === expandedCardId);
-  }, [expandedCardId]);
+    return filteredCards.findIndex(card => card.id === expandedCardId);
+  }, [expandedCardId, filteredCards]);
 
   // Handle scroll to center expanded card
   useEffect(() => {
@@ -307,10 +319,15 @@ export default function WalletScreen() {
     }
   };
 
+  const clearSearch = () => {
+    setSearchQuery('');
+    setExpandedCardId(null);
+  };
+
   // Calculate total height needed for all cards (including expansion space)
   const totalStackHeight = useMemo(() => {
     let totalHeight = CARD_HEIGHT;
-    for (let i = 0; i < mockCards.length; i++) {
+    for (let i = 0; i < filteredCards.length; i++) {
       totalHeight += getRandomOffset(i);
     }
     // Add extra space for card expansion
@@ -318,7 +335,7 @@ export default function WalletScreen() {
       totalHeight += CARD_HEIGHT;
     }
     return totalHeight + 200; // Extra padding
-  }, [expandedCardIndex]);
+  }, [expandedCardIndex, filteredCards.length]);
 
   return (
     <LinearGradient colors={['#f1eee6', '#faefea']} locations={[0.7, 1]} style={styles.container}>
@@ -335,6 +352,25 @@ export default function WalletScreen() {
             />
           </View>
         </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchBar}>
+            <Search color="#6B7280" size={20} strokeWidth={2} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search your cards..."
+              placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={clearSearch} style={styles.clearButton}>
+                <X color="#6B7280" size={20} strokeWidth={2} />
+              </Pressable>
+            )}
+          </View>
+        </View>
         
         <ScrollView 
           ref={scrollViewRef}
@@ -342,24 +378,36 @@ export default function WalletScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <TouchableWithoutFeedback onPress={handleOutsidePress}>
-            <View style={[styles.stackContainer, { height: totalStackHeight }]}>
-              {mockCards.map((card, index) => (
-                <AnimatedCard
-                  key={card.id}
-                  card={card}
-                  index={index}
-                  totalCards={mockCards.length}
-                  expandedCardIndex={expandedCardIndex}
-                  initialStackPosition={cardPositions[index].initialStackPosition}
-                  initialRotation={cardPositions[index].initialRotation}
-                  initialHorizontalOffset={cardPositions[index].initialHorizontalOffset}
-                  onPress={() => handleCardPress(card.id)}
-                  onSecondPress={() => handleCardSecondPress(card.id)}
-                />
-              ))}
+          {filteredCards.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>No cards found</Text>
+              <Text style={styles.emptyStateText}>
+                {searchQuery.trim() 
+                  ? `No cards match "${searchQuery}"`
+                  : "You don't have any loyalty cards yet"
+                }
+              </Text>
             </View>
-          </TouchableWithoutFeedback>
+          ) : (
+            <TouchableWithoutFeedback onPress={handleOutsidePress}>
+              <View style={[styles.stackContainer, { height: totalStackHeight }]}>
+                {filteredCards.map((card, index) => (
+                  <AnimatedCard
+                    key={card.id}
+                    card={card}
+                    index={index}
+                    totalCards={filteredCards.length}
+                    expandedCardIndex={expandedCardIndex}
+                    initialStackPosition={cardPositions[index].initialStackPosition}
+                    initialRotation={cardPositions[index].initialRotation}
+                    initialHorizontalOffset={cardPositions[index].initialHorizontalOffset}
+                    onPress={() => handleCardPress(card.id)}
+                    onSecondPress={() => handleCardSecondPress(card.id)}
+                  />
+                ))}
+              </View>
+            </TouchableWithoutFeedback>
+          )}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -405,6 +453,37 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
+  searchContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontFamily: 'DMSans-Regular',
+    color: '#1F2937',
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
   scrollView: {
     flex: 1,
   },
@@ -425,5 +504,26 @@ const styles = StyleSheet.create({
   cardPressable: {
     width: '100%',
     height: '100%',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 100,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontFamily: 'DelaGothicOne-Regular',
+    color: '#2D1B69',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontFamily: 'DMSans-Regular',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });
