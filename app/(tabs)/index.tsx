@@ -128,8 +128,8 @@ const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const HEADER_HEIGHT = 120; // Approximate header height
 const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
-const SEARCH_BAR_HEIGHT = 80;
-const PULL_THRESHOLD = 50; // How far to pull to reveal search
+const SEARCH_BAR_HEIGHT = 70;
+const PULL_THRESHOLD = 60; // How far to pull to reveal search
 
 // Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
@@ -265,7 +265,6 @@ export default function WalletScreen() {
   // Animated values for search functionality
   const searchOffset = useSharedValue(0);
   const scrollY = useSharedValue(0);
-  const searchBarTranslateY = useSharedValue(-SEARCH_BAR_HEIGHT);
 
   // Pre-calculate all card positions and properties
   const cardPositions = useMemo(() => {
@@ -332,19 +331,17 @@ export default function WalletScreen() {
 
   const showSearch = () => {
     setIsSearchVisible(true);
-    searchOffset.value = withSpring(SEARCH_BAR_HEIGHT, { damping: 25, stiffness: 120 });
-    searchBarTranslateY.value = withSpring(0, { damping: 25, stiffness: 120 });
+    searchOffset.value = withSpring(SEARCH_BAR_HEIGHT, { damping: 20, stiffness: 100 });
     // Focus search input after animation
     setTimeout(() => {
       searchInputRef.current?.focus();
-    }, 200);
+    }, 300);
   };
 
   const hideSearch = () => {
     setIsSearchVisible(false);
     setSearchQuery('');
-    searchOffset.value = withSpring(0, { damping: 25, stiffness: 120 });
-    searchBarTranslateY.value = withSpring(-SEARCH_BAR_HEIGHT, { damping: 25, stiffness: 120 });
+    searchOffset.value = withSpring(0, { damping: 20, stiffness: 100 });
     searchInputRef.current?.blur();
   };
 
@@ -373,7 +370,8 @@ export default function WalletScreen() {
   }, [expandedCardIndex, filteredCards.length]);
 
   const searchBarAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: searchBarTranslateY.value }],
+    transform: [{ translateY: withSpring(isSearchVisible ? 0 : -SEARCH_BAR_HEIGHT, { damping: 20, stiffness: 100 }) }],
+    opacity: withTiming(isSearchVisible ? 1 : 0, { duration: 200 }),
   }));
 
   return (
@@ -393,14 +391,8 @@ export default function WalletScreen() {
         </View>
 
         {/* Search Bar - Fixed position overlay */}
-        <Animated.View 
-          style={[styles.searchBarContainer, searchBarAnimatedStyle]} 
-          pointerEvents={isSearchVisible ? 'auto' : 'none'}
-        >
-          <LinearGradient 
-            colors={['#f1eee6', 'rgba(241, 238, 230, 0.98)']} 
-            style={styles.searchBarBackground}
-          >
+        <Animated.View style={[styles.searchBarContainer, searchBarAnimatedStyle]} pointerEvents={isSearchVisible ? 'auto' : 'none'}>
+          <LinearGradient colors={['#f1eee6', 'rgba(241, 238, 230, 0.95)']} style={styles.searchBarBackground}>
             <View style={styles.searchBar}>
               <Search color="#6B7280" size={20} strokeWidth={2} />
               <TextInput
@@ -410,7 +402,6 @@ export default function WalletScreen() {
                 placeholderTextColor="#9CA3AF"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                returnKeyType="search"
               />
               <Pressable onPress={hideSearch} style={styles.closeButton}>
                 <X color="#6B7280" size={20} strokeWidth={2} />
@@ -506,16 +497,8 @@ const styles = StyleSheet.create({
   searchBarBackground: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   searchBar: {
     flexDirection: 'row',
@@ -523,7 +506,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -543,8 +526,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(107, 114, 128, 0.1)',
   },
   scrollView: {
     flex: 1,
