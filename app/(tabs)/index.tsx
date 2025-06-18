@@ -127,7 +127,7 @@ const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const HEADER_HEIGHT = 120; // Approximate header height
 const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
-const SEARCH_BAR_HEIGHT = 80; // Height of search bar container
+const SEARCH_BAR_HEIGHT = 120; // Increased from 80 to 120 for more padding below search bar
 
 // Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
