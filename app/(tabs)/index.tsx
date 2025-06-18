@@ -179,7 +179,8 @@ function AnimatedCard({
   const translateX = useSharedValue(initialHorizontalOffset);
   const scale = useSharedValue(1);
   const rotate = useSharedValue(initialRotation);
-  const zIndex = useSharedValue(totalCards - index + 100); // Ensure cards are above search bar
+  // Ensure all cards have z-index higher than search bar (which is 1)
+  const zIndex = useSharedValue(totalCards - index + 100);
   
   const isExpanded = expandedCardIndex === index;
   const isAfterExpanded = expandedCardIndex !== null && index > expandedCardIndex;
@@ -388,7 +389,7 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* Floating Search Bar - Behind Cards */}
+        {/* Floating Search Bar - Behind Cards with very low z-index */}
         <Animated.View style={[styles.floatingSearchContainer, searchBarAnimatedStyle]}>
           <View style={styles.searchBar}>
             <Search color="#6B7280" size={20} strokeWidth={2} />
@@ -495,25 +496,25 @@ const styles = StyleSheet.create({
     top: HEADER_HEIGHT + 40, // Position below header
     left: 0,
     right: 0,
-    zIndex: 50, // Lower z-index so cards appear above it
+    zIndex: 1, // Very low z-index - behind all cards
     paddingHorizontal: 24,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)', // Slightly transparent
+    backgroundColor: 'rgba(255, 255, 255, 0.85)', // More transparent
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.08, // Reduced shadow for subtlety
-    shadowRadius: 8,
-    elevation: 4,
-    backdropFilter: 'blur(10px)', // Add blur effect
+    shadowOpacity: 0.05, // Very subtle shadow
+    shadowRadius: 4,
+    elevation: 2,
+    backdropFilter: 'blur(20px)', // Stronger blur effect
   },
   searchInput: {
     flex: 1,
