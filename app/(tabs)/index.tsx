@@ -7,8 +7,6 @@ import Animated, {
   withSpring, 
   withTiming,
   useAnimatedScrollHandler,
-  interpolate,
-  Extrapolate,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { Search, X } from 'lucide-react-native';
@@ -179,8 +177,7 @@ function AnimatedCard({
   const translateX = useSharedValue(initialHorizontalOffset);
   const scale = useSharedValue(1);
   const rotate = useSharedValue(initialRotation);
-  // Ensure all cards have z-index higher than search bar (which is 1)
-  const zIndex = useSharedValue(totalCards - index + 100);
+  const zIndex = useSharedValue(totalCards - index);
   
   const isExpanded = expandedCardIndex === index;
   const isAfterExpanded = expandedCardIndex !== null && index > expandedCardIndex;
@@ -199,14 +196,14 @@ function AnimatedCard({
       translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
-      zIndex.value = withTiming(totalCards - index + 100, { duration: 50 });
+      zIndex.value = withTiming(totalCards - index, { duration: 50 });
     } else {
       // Normal stack position
       translateYDelta.value = withSpring(0, { damping: 30, stiffness: 90 });
       translateX.value = withSpring(initialHorizontalOffset, { damping: 30, stiffness: 90 });
       scale.value = withSpring(1, { damping: 30, stiffness: 90 });
       rotate.value = withSpring(initialRotation, { damping: 30, stiffness: 90 });
-      zIndex.value = withTiming(totalCards - index + 100, { duration: 50 });
+      zIndex.value = withTiming(totalCards - index, { duration: 50 });
     }
   }, [isExpanded, isAfterExpanded, expandedCardIndex, initialHorizontalOffset, initialRotation, totalCards, index]);
 
@@ -262,7 +259,7 @@ export default function WalletScreen() {
   // Scroll animation values
   const scrollY = useSharedValue(0);
   const lastScrollY = useSharedValue(0);
-  const searchBarTranslateY = useSharedValue(-SEARCH_BAR_HEIGHT);
+  const searchBarOpacity = useSharedValue(0);
 
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -282,7 +279,7 @@ export default function WalletScreen() {
         cumulativeOffset += getRandomOffset(i);
       }
       return {
-        initialStackPosition: cumulativeOffset,
+        initialStackPosition: cumulativeOffset + SEARCH_BAR_HEIGHT, // Add space for search bar
         initialRotation: getRandomRotation(index),
         initialHorizontalOffset: getRandomHorizontalOffset(index),
       };
@@ -305,10 +302,10 @@ export default function WalletScreen() {
       // Show search bar when scrolling up, hide when scrolling down
       if (diff < -10 && currentScrollY > 50) {
         // Scrolling up - show search bar
-        searchBarTranslateY.value = withSpring(0, { damping: 20, stiffness: 90 });
+        searchBarOpacity.value = withSpring(1, { damping: 20, stiffness: 90 });
       } else if (diff > 10) {
         // Scrolling down - hide search bar
-        searchBarTranslateY.value = withSpring(-SEARCH_BAR_HEIGHT, { damping: 20, stiffness: 90 });
+        searchBarOpacity.value = withSpring(0, { damping: 20, stiffness: 90 });
       }
       
       lastScrollY.value = currentScrollY;
@@ -317,7 +314,7 @@ export default function WalletScreen() {
 
   // Animated style for search bar
   const searchBarAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: searchBarTranslateY.value }],
+    opacity: searchBarOpacity.value,
   }));
 
   // Handle scroll to center expanded card
@@ -362,7 +359,7 @@ export default function WalletScreen() {
 
   // Calculate total height needed for all cards (including expansion space)
   const totalStackHeight = useMemo(() => {
-    let totalHeight = CARD_HEIGHT;
+    let totalHeight = CARD_HEIGHT + SEARCH_BAR_HEIGHT; // Include search bar space
     for (let i = 0; i < filteredCards.length; i++) {
       totalHeight += getRandomOffset(i);
     }
@@ -388,25 +385,6 @@ export default function WalletScreen() {
             />
           </View>
         </View>
-
-        {/* Floating Search Bar - Behind Cards with very low z-index */}
-        <Animated.View style={[styles.floatingSearchContainer, searchBarAnimatedStyle]}>
-          <View style={styles.searchBar}>
-            <Search color="#6B7280" size={20} strokeWidth={2} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search your cards..."
-              placeholderTextColor="#9CA3AF"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            {searchQuery.length > 0 && (
-              <Pressable onPress={clearSearch} style={styles.clearButton}>
-                <X color="#6B7280" size={20} strokeWidth={2} />
-              </Pressable>
-            )}
-          </View>
-        </Animated.View>
         
         <Animated.ScrollView 
           ref={scrollViewRef}
@@ -429,6 +407,26 @@ export default function WalletScreen() {
           ) : (
             <TouchableWithoutFeedback onPress={handleOutsidePress}>
               <View style={[styles.stackContainer, { height: totalStackHeight }]}>
+                {/* Search Bar - Positioned in scroll content behind cards */}
+                <Animated.View style={[styles.searchContainer, searchBarAnimatedStyle]}>
+                  <View style={styles.searchBar}>
+                    <Search color="#6B7280" size={20} strokeWidth={2} />
+                    <TextInput
+                      style={styles.searchInput}
+                      placeholder="Search your cards..."
+                      placeholderTextColor="#9CA3AF"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                    />
+                    {searchQuery.length > 0 && (
+                      <Pressable onPress={clearSearch} style={styles.clearButton}>
+                        <X color="#6B7280" size={20} strokeWidth={2} />
+                      </Pressable>
+                    )}
+                  </View>
+                </Animated.View>
+
+                {/* Cards Stack */}
                 {filteredCards.map((card, index) => (
                   <AnimatedCard
                     key={card.id}
@@ -491,42 +489,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
-  floatingSearchContainer: {
-    position: 'absolute',
-    top: HEADER_HEIGHT + 40, // Position below header
-    left: 0,
-    right: 0,
-    zIndex: 1, // Very low z-index - behind all cards
-    paddingHorizontal: 24,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.85)', // More transparent
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05, // Very subtle shadow
-    shadowRadius: 4,
-    elevation: 2,
-    backdropFilter: 'blur(20px)', // Stronger blur effect
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 16,
-    fontFamily: 'DMSans-Regular',
-    color: '#1F2937',
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
   scrollView: {
     flex: 1,
   },
@@ -538,6 +500,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 0,
     marginHorizontal: 16, // 16px margin on both sides
+  },
+  searchContainer: {
+    position: 'absolute',
+    top: 20,
+    left: 8,
+    right: 8,
+    zIndex: 0, // Behind cards
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontFamily: 'DMSans-Regular',
+    color: '#1F2937',
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   cardContainer: {
     position: 'absolute',
