@@ -1,13 +1,16 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions, TouchableWithoutFeedback, Pressable, ScrollView, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
   withSpring, 
   withTiming,
+  useAnimatedScrollHandler,
+  runOnJS,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
+import { Search, X } from 'lucide-react-native';
 import PunchCard from '@/components/PunchCard';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -125,6 +128,8 @@ const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const HEADER_HEIGHT = 120; // Approximate header height
 const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
+const SEARCH_BAR_HEIGHT = 60;
+const PULL_THRESHOLD = 80; // How far to pull to reveal search
 
 // Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
@@ -155,6 +160,7 @@ interface AnimatedCardProps {
   initialStackPosition: number;
   initialRotation: number;
   initialHorizontalOffset: number;
+  searchOffset: Animated.SharedValue<number>;
   onPress: () => void;
   onSecondPress: () => void;
 }
@@ -167,6 +173,7 @@ function AnimatedCard({
   initialStackPosition,
   initialRotation,
   initialHorizontalOffset,
+  searchOffset,
   onPress, 
   onSecondPress 
 }: AnimatedCardProps) {
@@ -207,7 +214,7 @@ function AnimatedCard({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },
-      { translateY: translateYDelta.value },
+      { translateY: translateYDelta.value + searchOffset.value },
       { rotate: `${rotate.value}deg` },
       { scale: scale.value },
     ],
@@ -250,7 +257,14 @@ function AnimatedCard({
 
 export default function WalletScreen() {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const searchInputRef = useRef<TextInput>(null);
+  
+  // Animated values for search functionality
+  const searchOffset = useSharedValue(0);
+  const scrollY = useSharedValue(0);
 
   // Pre-calculate all card positions and properties
   const cardPositions = useMemo(() => {
@@ -271,6 +285,14 @@ export default function WalletScreen() {
     if (!expandedCardId) return null;
     return mockCards.findIndex(card => card.id === expandedCardId);
   }, [expandedCardId]);
+
+  // Filter cards based on search query
+  const filteredCards = useMemo(() => {
+    if (!searchQuery.trim()) return mockCards;
+    return mockCards.filter(card =>
+      card.businessName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
 
   // Handle scroll to center expanded card
   useEffect(() => {
@@ -307,10 +329,37 @@ export default function WalletScreen() {
     }
   };
 
+  const showSearch = () => {
+    setIsSearchVisible(true);
+    searchOffset.value = withSpring(SEARCH_BAR_HEIGHT, { damping: 20, stiffness: 100 });
+    // Focus search input after animation
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 200);
+  };
+
+  const hideSearch = () => {
+    setIsSearchVisible(false);
+    setSearchQuery('');
+    searchOffset.value = withSpring(0, { damping: 20, stiffness: 100 });
+    searchInputRef.current?.blur();
+  };
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+      
+      // Check if we're at the top and pulling down
+      if (event.contentOffset.y < -PULL_THRESHOLD && !isSearchVisible) {
+        runOnJS(showSearch)();
+      }
+    },
+  });
+
   // Calculate total height needed for all cards (including expansion space)
   const totalStackHeight = useMemo(() => {
     let totalHeight = CARD_HEIGHT;
-    for (let i = 0; i < mockCards.length; i++) {
+    for (let i = 0; i < filteredCards.length; i++) {
       totalHeight += getRandomOffset(i);
     }
     // Add extra space for card expansion
@@ -318,7 +367,12 @@ export default function WalletScreen() {
       totalHeight += CARD_HEIGHT;
     }
     return totalHeight + 200; // Extra padding
-  }, [expandedCardIndex]);
+  }, [expandedCardIndex, filteredCards.length]);
+
+  const searchBarAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: searchOffset.value - SEARCH_BAR_HEIGHT }],
+    opacity: withTiming(isSearchVisible ? 1 : 0, { duration: 200 }),
+  }));
 
   return (
     <LinearGradient colors={['#f1eee6', '#faefea']} locations={[0.7, 1]} style={styles.container}>
@@ -335,32 +389,57 @@ export default function WalletScreen() {
             />
           </View>
         </View>
+
+        {/* Search Bar */}
+        <Animated.View style={[styles.searchBarContainer, searchBarAnimatedStyle]}>
+          <View style={styles.searchBar}>
+            <Search color="#6B7280" size={20} strokeWidth={2} />
+            <TextInput
+              ref={searchInputRef}
+              style={styles.searchInput}
+              placeholder="Search your cards..."
+              placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <Pressable onPress={hideSearch} style={styles.closeButton}>
+              <X color="#6B7280" size={20} strokeWidth={2} />
+            </Pressable>
+          </View>
+        </Animated.View>
         
-        <ScrollView 
+        <Animated.ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          bounces={true}
         >
           <TouchableWithoutFeedback onPress={handleOutsidePress}>
             <View style={[styles.stackContainer, { height: totalStackHeight }]}>
-              {mockCards.map((card, index) => (
-                <AnimatedCard
-                  key={card.id}
-                  card={card}
-                  index={index}
-                  totalCards={mockCards.length}
-                  expandedCardIndex={expandedCardIndex}
-                  initialStackPosition={cardPositions[index].initialStackPosition}
-                  initialRotation={cardPositions[index].initialRotation}
-                  initialHorizontalOffset={cardPositions[index].initialHorizontalOffset}
-                  onPress={() => handleCardPress(card.id)}
-                  onSecondPress={() => handleCardSecondPress(card.id)}
-                />
-              ))}
+              {filteredCards.map((card, index) => {
+                const originalIndex = mockCards.findIndex(c => c.id === card.id);
+                return (
+                  <AnimatedCard
+                    key={card.id}
+                    card={card}
+                    index={index}
+                    totalCards={filteredCards.length}
+                    expandedCardIndex={expandedCardIndex}
+                    initialStackPosition={cardPositions[originalIndex].initialStackPosition}
+                    initialRotation={cardPositions[originalIndex].initialRotation}
+                    initialHorizontalOffset={cardPositions[originalIndex].initialHorizontalOffset}
+                    searchOffset={searchOffset}
+                    onPress={() => handleCardPress(card.id)}
+                    onSecondPress={() => handleCardSecondPress(card.id)}
+                  />
+                );
+              })}
             </View>
           </TouchableWithoutFeedback>
-        </ScrollView>
+        </Animated.ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -404,6 +483,42 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 3,
     borderColor: '#FFFFFF',
+  },
+  searchBarContainer: {
+    position: 'absolute',
+    top: HEADER_HEIGHT,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 12,
+    fontSize: 16,
+    fontFamily: 'DMSans-Regular',
+    color: '#1F2937',
+  },
+  closeButton: {
+    padding: 4,
   },
   scrollView: {
     flex: 1,
