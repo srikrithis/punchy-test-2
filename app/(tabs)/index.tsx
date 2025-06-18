@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 42,
+    fontSize: 32,
     fontFamily: 'DelaGothicOne-Regular',
     color: '#2D1B69',
     marginBottom: 4,
