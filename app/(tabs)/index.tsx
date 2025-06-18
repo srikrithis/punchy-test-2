@@ -6,6 +6,9 @@ import Animated, {
   useAnimatedStyle, 
   withSpring, 
   withTiming,
+  useAnimatedScrollHandler,
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { Search, X } from 'lucide-react-native';
@@ -126,6 +129,7 @@ const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const HEADER_HEIGHT = 120; // Approximate header height
 const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
+const SEARCH_BAR_HEIGHT = 80; // Height of search bar container
 
 // Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
@@ -253,6 +257,11 @@ export default function WalletScreen() {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Scroll animation values
+  const scrollY = useSharedValue(0);
+  const lastScrollY = useSharedValue(0);
+  const searchBarTranslateY = useSharedValue(-SEARCH_BAR_HEIGHT);
 
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -283,6 +292,32 @@ export default function WalletScreen() {
     if (!expandedCardId) return null;
     return filteredCards.findIndex(card => card.id === expandedCardId);
   }, [expandedCardId, filteredCards]);
+
+  // Scroll handler
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const currentScrollY = event.contentOffset.y;
+      const diff = currentScrollY - lastScrollY.value;
+      
+      scrollY.value = currentScrollY;
+      
+      // Show search bar when scrolling up, hide when scrolling down
+      if (diff < -10 && currentScrollY > 50) {
+        // Scrolling up - show search bar
+        searchBarTranslateY.value = withSpring(0, { damping: 20, stiffness: 90 });
+      } else if (diff > 10) {
+        // Scrolling down - hide search bar
+        searchBarTranslateY.value = withSpring(-SEARCH_BAR_HEIGHT, { damping: 20, stiffness: 90 });
+      }
+      
+      lastScrollY.value = currentScrollY;
+    },
+  });
+
+  // Animated style for search bar
+  const searchBarAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: searchBarTranslateY.value }],
+  }));
 
   // Handle scroll to center expanded card
   useEffect(() => {
@@ -353,8 +388,8 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        {/* Floating Search Bar */}
+        <Animated.View style={[styles.floatingSearchContainer, searchBarAnimatedStyle]}>
           <View style={styles.searchBar}>
             <Search color="#6B7280" size={20} strokeWidth={2} />
             <TextInput
@@ -370,13 +405,15 @@ export default function WalletScreen() {
               </Pressable>
             )}
           </View>
-        </View>
+        </Animated.View>
         
-        <ScrollView 
+        <Animated.ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
         >
           {filteredCards.length === 0 ? (
             <View style={styles.emptyState}>
@@ -408,7 +445,7 @@ export default function WalletScreen() {
               </View>
             </TouchableWithoutFeedback>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -453,9 +490,13 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#FFFFFF',
   },
-  searchContainer: {
+  floatingSearchContainer: {
+    position: 'absolute',
+    top: HEADER_HEIGHT + 40, // Position below header
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     paddingHorizontal: 24,
-    paddingBottom: 20,
   },
   searchBar: {
     flexDirection: 'row',
@@ -467,11 +508,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   searchInput: {
     flex: 1,
