@@ -128,8 +128,8 @@ const CARD_HEIGHT = 226;
 const CARD_WIDTH = screenWidth - 32; // 16px margin on each side
 const HEADER_HEIGHT = 120; // Approximate header height
 const TAB_BAR_HEIGHT = 100; // Approximate tab bar height
-const SEARCH_BAR_HEIGHT = 60;
-const PULL_THRESHOLD = 80; // How far to pull to reveal search
+const SEARCH_BAR_HEIGHT = 70;
+const PULL_THRESHOLD = 60; // How far to pull to reveal search
 
 // Helper function to generate random vertical offset between 60-66px
 const getRandomOffset = (index: number) => {
@@ -335,7 +335,7 @@ export default function WalletScreen() {
     // Focus search input after animation
     setTimeout(() => {
       searchInputRef.current?.focus();
-    }, 200);
+    }, 300);
   };
 
   const hideSearch = () => {
@@ -370,7 +370,7 @@ export default function WalletScreen() {
   }, [expandedCardIndex, filteredCards.length]);
 
   const searchBarAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: searchOffset.value - SEARCH_BAR_HEIGHT }],
+    transform: [{ translateY: withSpring(isSearchVisible ? 0 : -SEARCH_BAR_HEIGHT, { damping: 20, stiffness: 100 }) }],
     opacity: withTiming(isSearchVisible ? 1 : 0, { duration: 200 }),
   }));
 
@@ -390,22 +390,24 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* Search Bar */}
-        <Animated.View style={[styles.searchBarContainer, searchBarAnimatedStyle]}>
-          <View style={styles.searchBar}>
-            <Search color="#6B7280" size={20} strokeWidth={2} />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              placeholder="Search your cards..."
-              placeholderTextColor="#9CA3AF"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-            <Pressable onPress={hideSearch} style={styles.closeButton}>
-              <X color="#6B7280" size={20} strokeWidth={2} />
-            </Pressable>
-          </View>
+        {/* Search Bar - Fixed position overlay */}
+        <Animated.View style={[styles.searchBarContainer, searchBarAnimatedStyle]} pointerEvents={isSearchVisible ? 'auto' : 'none'}>
+          <LinearGradient colors={['#f1eee6', 'rgba(241, 238, 230, 0.95)']} style={styles.searchBarBackground}>
+            <View style={styles.searchBar}>
+              <Search color="#6B7280" size={20} strokeWidth={2} />
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInput}
+                placeholder="Search your cards..."
+                placeholderTextColor="#9CA3AF"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              <Pressable onPress={hideSearch} style={styles.closeButton}>
+                <X color="#6B7280" size={20} strokeWidth={2} />
+              </Pressable>
+            </View>
+          </LinearGradient>
         </Animated.View>
         
         <Animated.ScrollView 
@@ -489,9 +491,14 @@ const styles = StyleSheet.create({
     top: HEADER_HEIGHT,
     left: 0,
     right: 0,
-    zIndex: 1000,
+    zIndex: 10000,
+    height: SEARCH_BAR_HEIGHT,
+  },
+  searchBarBackground: {
+    flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   searchBar: {
     flexDirection: 'row',
@@ -499,7 +506,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
